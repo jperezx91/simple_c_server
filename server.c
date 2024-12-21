@@ -7,9 +7,22 @@
 #include "archivohttp.h"
 #include <pthread.h>
 #include <unistd.h>
-#define BUFFER_SIZE 1024
+#include <sys/ioctl.h> 
+#define BUFFER_SIZE 8068
 
 // funciones
+void flush_socket(int sock) {
+    char buffer[1024];
+    int bytes_available;
+
+    // Mientras haya datos disponibles en el socket, lee y descarta
+    while (ioctl(sock, FIONREAD, &bytes_available) == 0 && bytes_available > 0) {
+        ssize_t received = recv(sock, buffer, sizeof(buffer), 0);
+        if (received <= 0) {
+            break; // Error o conexión cerrada
+        }
+    }
+}
 
 char checkArchivo(const char *recurso)
 {
@@ -25,7 +38,7 @@ char checkArchivo(const char *recurso)
 
 char *obtenerRecurso(const char *request)
 {
-    char *path = malloc(256);
+    char *path = malloc(456);
     if (sscanf(request, "GET %255s", path) == 1) {
         
     } else {
@@ -41,13 +54,29 @@ void notFound(int sock, const char *msg)
     close(sock);
 }
 
+void errReponse(int sock, const char *msg, char *err)
+{
+    char *rsp = malloc(strlen(msg) + 200);
+    sprintf(rsp, "HTTP/1.1 %s\r\n\r\n %s", err, msg);
+    send(sock, rsp, strlen(rsp), 0);
+    close(sock);
+}
+
 void *handle_client(void *arg) {
     ClientData *client_data = (ClientData *)arg;
     int sock = *(int *)client_data->client_socket;
     free(client_data->client_socket);
     HashMap *map = client_data->map;
     char buffer[BUFFER_SIZE];
-    recv(sock, buffer, sizeof(buffer) - 1, 0); // Leer solicitud (no la procesamos realmente)
+    ssize_t recieved = recv(sock, buffer, sizeof(buffer) - 1, 0); // Leer solicitud (no la procesamos realmente)
+    printf("Status: %ld\n", recieved);
+    if(recieved >= BUFFER_SIZE - 1)
+    {
+        flush_socket(sock);
+        printf("Cerrando la conexion... %ld.\n", recieved);
+        errReponse(sock, "La solicitud supero el limite permitido por el servidor.", "413 Content too large");
+        close(sock);
+    }
     char *direccion = obtenerRecurso(buffer);
     //printf("URL: %s | sock: %d\n", direccion, sock);
     HashNode *n = get(map, direccion);
@@ -60,6 +89,7 @@ void *handle_client(void *arg) {
                 n = get(map, strcat(direccion, "index.html"));
             else
                 n = get(map, strcat(direccion, "/index.html")); // refactor dsp
+
             if(n == NULL)
             {
                 if(client_data->react_mode == 1)
@@ -68,7 +98,8 @@ void *handle_client(void *arg) {
                     n = get(map, "/index.html");
                 }else{
                     notFound(sock, "No existe recurso 1.");
-                    free(direccion);
+                    if(direccion != NULL)
+                        free(direccion);
                     pthread_exit(NULL);
                 }
             }
