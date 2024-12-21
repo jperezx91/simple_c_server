@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "hashmap.h": "c",
+        "pthread.h": "c",
+        "stat.h": "c",
+        "string.h": "c"
+    }
+}
