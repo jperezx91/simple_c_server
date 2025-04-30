@@ -5,6 +5,8 @@ typedef struct HashNode {
     char *value;
     int sz;
     struct HashNode *next;
+    struct HashNode *nextChild;
+    struct HashNode *children;
 }HashNode;
 
 typedef struct HashMap {
@@ -14,7 +16,7 @@ typedef struct HashMap {
 
 unsigned int hash(const char *key);
 HashNode *create_node(const char *key, char *value, int sz);
-void insert(HashMap *map, const char *key, char *value, int sz);
+HashNode *insert(HashMap *map, const char *key, char *value, int sz, HashNode *parent);
 HashNode *get(HashMap *map, const char *key);
 void delete(HashMap *map, const char *key);
 HashMap *create_map();

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width={device-width}, initial-scale=1.0">
+    <title>Explorando archivos de %DIRECTORY%</title>
+    <script>
+        const currentDir = "%DIRECTORY%";
+    </script>
+</head>
+<body>
+    
+    <h1 id="title">Archivos en </h1>
+    <hr>
+    <p id="files" style="display: none;">%FILESDIR%</p>
+    <ul id="file_list"></ul>
+
+    <script>
+        document.getElementById("title").innerText += " " +currentDir;
+        const files_p = document.getElementById("files");
+        const file_list = document.getElementById("file_list");
+        const files = files_p.innerHTML.split("%");
+        const first_li = document.createElement("li");
+        const first_a = document.createElement("a");
+        first_a.innerText = "..";
+        first_a.href = currentDir.split("/").slice(0, -1).join("/") + "/";
+        first_li.appendChild(first_a);
+        file_list.appendChild(first_li);
+        files.forEach(file => {
+            const paths = file.split("/");
+            const file_name = paths[paths.length - 1];
+            const li = document.createElement("li");
+            const a = document.createElement("a");
+            a.innerText = file_name;
+            if(file.search("\.[.]") != -1)
+                a.href = file;
+            else
+                a.href = file + "/";
+            li.appendChild(a);
+            file_list.appendChild(li);
+        });
+
+    </script>
+</body>
+</html>
+

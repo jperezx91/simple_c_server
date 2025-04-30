@@ -20,9 +20,10 @@ HashNode *create_node(const char *key, char *value, int sz)
     node->key = malloc(strlen(key) + 1);
     node->sz = sz;
     strcpy(node->key, key);
-    node->value = malloc(strlen(value) + 1);
     node->value = value;
     node->next = NULL;
+    node->children = NULL;
+    node->nextChild = NULL;
     return node;
 }
 
@@ -34,18 +35,21 @@ void limpiar(HashMap *map) {
 
             // Liberar memoria de key y value, verificando que no sean NULL
             if (current->key != NULL) {
+                printf("Current key: %s\n", current->key);
                 free(current->key);
                 current->key = NULL;
             }
             if (current->value != NULL) {
+                printf("Liberando memoria de value. %ld\n", sizeof(current->value));
                 free(current->value);
                 current->value = NULL;
             }
-
+            
             // Liberar el nodo actual
-            free(current);
+            if(current != NULL)
+                free(current);
             current = next;
-
+           
         }
 
         // Marcar el índice como limpio
@@ -53,20 +57,38 @@ void limpiar(HashMap *map) {
     }
 }
 
-void insert(HashMap *map, const char *key, char *value, int sz)
+HashNode *insert(HashMap *map, const char *key, char *value, int sz, HashNode *parent)
 {
     int index = hash(key);
     HashNode *node = create_node(key, value, sz);
+    HashNode *output;
     if (map->table[index] == NULL) {
         map->table[index] = node;
+        output = map->table[index];
     } else {
         HashNode *current = map->table[index];
-        while (current->next != NULL) {
+        while (current->next != NULL) 
             current = current->next;
-        }
+        
         current->next = node;
+        output = current->next;
     }
     map->size++;
+    if(parent != NULL)
+    {
+        
+        if(parent->children == NULL)
+        {
+            parent->children = output;
+        }else
+        {
+            HashNode *aux = parent->children;
+            while(aux->nextChild != NULL)
+                aux = aux->nextChild;
+            aux->nextChild = output;
+        }
+    }
+    return output;
 }
 
 HashNode *get(HashMap *map, const char *key)
